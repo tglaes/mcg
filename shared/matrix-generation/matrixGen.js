@@ -1,7 +1,7 @@
 const fs = require('fs')
 
 const outputFileName = "matrix.csv";
-const matrixDimension = 5;
+const matrixDimension = 4;
 const minValueDiagonalElement = 100;
 const maxValueDiagonalElement = 200;
 const maxValueNonDiagonalElement = 10;
@@ -14,7 +14,7 @@ const vector = Array(matrixDimension);
 
 generateMatrix();
 generateVector();
-printVectorAndMatrix();
+//printVectorAndMatrix();
 //testMatrixAndVector();
 //writeMatrixAndVectorToFile();
 writeMatrixAndVectorToFileCsr();
@@ -199,5 +199,5 @@ function roundNumber(number) {
 }
 
 function getRandomNumberInRange(min, max) {
-    return Math.random() * (max - min) + min;
+    return (Math.random() * (max - min) + min) + 0.0001;
 }
