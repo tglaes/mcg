@@ -1,11 +1,11 @@
 const fs = require('fs')
 
 const outputFileName = "matrix.csv";
-const matrixDimension = 4;
+const matrixDimension = 5;
 const minValueDiagonalElement = 100;
 const maxValueDiagonalElement = 200;
 const maxValueNonDiagonalElement = 10;
-let NUMBER_OF_NON_ZERO_ENTRIES_PER_ROW = 2;
+let NUMBER_OF_NON_ZERO_ENTRIES_PER_ROW = 3;
 
 let numberOfZeroes = 0;
 
@@ -145,21 +145,23 @@ function writeMatrixAndVectorToFileCsr() {
     let v = [];
     let col_index = [];
     let row_index = [];
+    row_index.push(0);
 
     let start = new Date().getTime() / 1000;
-    fs.writeFileSync(outputFileName, "" + matrixDimension + "\n", function () { });
 
     for (let i = 0; i < matrixDimension; i++) {
-        let numberOfZeroesInCurrentRow = 0;
+        let numberOfNonZeroesInCurrentRow = 0;
         for (let j = 0; j < matrixDimension; j++) {
             if (matrix[i][j] !== 0) {
                 v.push(matrix[i][j]);
                 col_index.push(j);
-                numberOfZeroesInCurrentRow++;
+                numberOfNonZeroesInCurrentRow++;
             }
         }
-        row_index.push(numberOfZeroesInCurrentRow);
+        row_index.push(row_index[row_index.length - 1] + numberOfNonZeroesInCurrentRow);
     }
+
+    fs.writeFileSync(outputFileName, "" + matrixDimension + "," + v.length + "," + row_index.length + "\n", function () { });
 
     let v_string = "";
     for (let i = 0; i < v.length; i++) {
@@ -199,5 +201,9 @@ function roundNumber(number) {
 }
 
 function getRandomNumberInRange(min, max) {
-    return (Math.random() * (max - min) + min) + 0.0001;
+    let random = 0;
+    do {
+        random = Math.random();
+    } while (random === 0);
+    return (random * (max - min) + min);
 }
