@@ -1,3 +1,4 @@
+// gcc main.c read_matrix.c -o main
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

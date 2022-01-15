@@ -1,12 +1,28 @@
 const fs = require('fs')
 
 const outputFileName = "matrix.csv";
-const matrixDimension = 5;
-const minValueDiagonalElement = 100;
-const maxValueDiagonalElement = 200;
-const maxValueNonDiagonalElement = 10;
-let NUMBER_OF_NON_ZERO_ENTRIES_PER_ROW = 3;
 
+// The dimension of the matrix and the vector
+const matrixDimension = 4;
+// The minimal value of an element on the diagonal
+const minValueDiagonalElement = 100;
+// The maximal value of an element on the diagonal
+const maxValueDiagonalElement = 200;
+// The maximal value of an element which is not on the diagonal
+const maxValueNonDiagonalElement = 10;
+// The amount of element per row unequal to zero (How many numbers unequal to zero should the row have)
+let NUMBER_OF_NON_ZERO_ENTRIES_PER_ROW = 2;
+// The amount of elements unequal to zero is NUMBER_OF_NON_ZERO_ENTRIES_PER_ROW + 1 (beacuse of the element on the diagonal)
+
+// COO rows
+// The total number of COO rows in the matrix (set to zero to not use COO rows)
+let NUMBER_OF_COO_ROWS = 0;
+// The amount of numbers unequal to zero in a COO row
+let NUMBER_OF_NON_ZERO_ENTRIES_IN_COO_ROW = 3;
+// An array with the indicies of COO rows
+let cooRowIndexArray;
+
+// The total amount of zeroes in the matrix (DO NOT SET, IT IS CALCULATED)
 let numberOfZeroes = 0;
 
 const matrix = Array.from(Array(matrixDimension), () => new Array(matrixDimension));
@@ -18,15 +34,27 @@ generateVector();
 //testMatrixAndVector();
 //writeMatrixAndVectorToFile();
 writeMatrixAndVectorToFileCsr();
+//writeMatrixAndVectorToFileEllCoo();
 
 function generateMatrix() {
+
+    // Generate the indicies for the COO rows
+    let cooRowIndicies = generateRandomIndicies(-1, NUMBER_OF_COO_ROWS);
+    cooRowIndexArray = cooRowIndicies.slice();
+    let currentCooRowIndex = cooRowIndicies.pop();
+
     let start = new Date().getTime() / 1000;
     for (let i = 0; i < matrixDimension; i++) {
-
-        let indicies = generateRandomIndicies(i);
+        let indicies = generateRandomIndicies(i, NUMBER_OF_NON_ZERO_ENTRIES_PER_ROW);
         let currentIndex = indicies.pop();
+        if (currentCooRowIndex === i) {
+            indicies = generateRandomIndicies(i, NUMBER_OF_NON_ZERO_ENTRIES_IN_COO_ROW);
+            currentIndex = indicies.pop();
+            currentCooRowIndex = cooRowIndicies.pop();
+        }
 
         for (let j = 0; j < matrixDimension; j++) {
+
             if (i === j) {
                 matrix[i][j] = roundNumber(getRandomNumberInRange(minValueDiagonalElement, maxValueDiagonalElement));
             } else if (j === currentIndex) {
@@ -49,11 +77,11 @@ function generateVector() {
     console.log("Done generating vector")
 }
 
-function generateRandomIndicies(excluded) {
+function generateRandomIndicies(excluded, amount) {
 
     let indicies = [];
 
-    for (let i = 0; i < NUMBER_OF_NON_ZERO_ENTRIES_PER_ROW; i++) {
+    for (let i = 0; i < amount; i++) {
         let index = Math.floor(getRandomNumberInRange(0, matrixDimension))
         if (index !== excluded && (indicies.findIndex(x => x === index) === -1)) {
             indicies.push(index);
@@ -130,12 +158,7 @@ function writeMatrixAndVectorToFile() {
         fs.appendFileSync(outputFileName, row, function (err) { })
     }
 
-    let vectorRow = "";
-    for (let i = 0; i < matrixDimension; i++) {
-        vectorRow += "," + vector[i];
-    }
-    vectorRow = vectorRow.substring(1, vectorRow.length);
-    fs.appendFileSync(outputFileName, vectorRow, function (err) { })
+    writeArrayToFile(vector, false);
 
     let end = new Date().getTime() / 1000;
     console.log("Done writing matrix and vector to file in " + roundNumber(end - start) + " seconds");
@@ -162,35 +185,94 @@ function writeMatrixAndVectorToFileCsr() {
     }
 
     fs.writeFileSync(outputFileName, "" + matrixDimension + "," + v.length + "," + row_index.length + "\n", function () { });
+    writeArrayToFile(v, true);
+    writeArrayToFile(col_index, true);
+    writeArrayToFile(row_index, true);
+    writeArrayToFile(vector, false);
 
-    let v_string = "";
-    for (let i = 0; i < v.length; i++) {
-        v_string += "," + v[i];
+    let end = new Date().getTime() / 1000;
+    console.log("Done writing matrix and vector to file in " + roundNumber(end - start) + " seconds");
+}
+
+function writeMatrixAndVectorToFileEllCoo() {
+
+    // ELL
+    let dataEll = [];
+    let colsEll = [];
+    let currentColumnIndexMap = new Map();
+
+    // COO
+    let dataCOO = [];
+    let rowsCOO = [];
+    let colsCOO = [];
+
+    let start = new Date().getTime() / 1000;
+
+    // ELL
+    for (let j = 0; j < matrixDimension; j++) {
+        for (let i = 0; i < matrixDimension; i++) {
+            if (cooRowIndexArray.findIndex(x => x === i) !== -1) {
+                continue;
+            }
+            if (currentColumnIndexMap.get(i) >= j) {
+                j = currentColumnIndexMap.get(i);
+            }
+            for (let k = j; k < matrixDimension; k++) {
+                if (matrix[i][k] !== 0) {
+                    dataEll.push(matrix[i][k]);
+                    colsEll.push(k);
+                    currentColumnIndexMap.set(i, k + 1);
+                    break;
+                }
+            }
+        }
     }
-    v_string = v_string.substring(1, v_string.length) + "\n";
 
-    let col_index_string = "";
-    for (let i = 0; i < col_index.length; i++) {
-        col_index_string += "," + col_index[i];
+    // COO
+    for (let i = 0; i < cooRowIndexArray.length; i++) {
+        let rowIndex = cooRowIndexArray.pop();
+        for (let j = 0; j < matrixDimension; j++) {
+            if (matrix[rowIndex][j] !== 0) {
+                dataCOO.push(matrix[rowIndex][j]);
+                rowsCOO.push(rowIndex);
+                colsCOO.push(j);
+            }
+        }
     }
-    col_index_string = col_index_string.substring(1, col_index_string.length) + "\n";
+    /*
+        for (let i = 0; i < dataEll.length; i++) {
+            process.stdout.write(dataEll[i] + ", ");
+        }
+        console.log("");
+        for (let i = 0; i < colsEll.length; i++) {
+            process.stdout.write(colsEll[i] + ", ");
+        }
+        console.log("");
+    
+        for (let i = 0; i < dataCOO.length; i++) {
+            process.stdout.write(dataCOO[i] + ", ");
+        }
+        console.log("");
+        for (let i = 0; i < rowsCOO.length; i++) {
+            process.stdout.write(rowsCOO[i] + ", ");
+        }
+        console.log("");
+    
+        for (let i = 0; i < colsCOO.length; i++) {
+            process.stdout.write(colsCOO[i] + ", ");
+        }
+        console.log("");
+    */
 
-    let row_index_string = "";
-    for (let i = 0; i < row_index.length; i++) {
-        row_index_string += "," + row_index[i];
-    }
-    row_index_string = row_index_string.substring(1, row_index_string.length) + "\n";
-
-    let vectorRow = "";
-    for (let i = 0; i < matrixDimension; i++) {
-        vectorRow += "," + vector[i];
-    }
-    vectorRow = vectorRow.substring(1, vectorRow.length);
-
-    fs.appendFileSync(outputFileName, v_string, function (err) { })
-    fs.appendFileSync(outputFileName, col_index_string, function (err) { })
-    fs.appendFileSync(outputFileName, row_index_string, function (err) { })
-    fs.appendFileSync(outputFileName, vectorRow, function (err) { })
+    fs.writeFileSync(outputFileName, "" + matrixDimension + "\n", function () { });
+    fs.appendFileSync(outputFileName, "" + dataEll.length + "," + colsEll.length + "\n", function () { });
+    writeArrayToFile(dataEll, true);
+    writeArrayToFile(colsEll, true);
+    fs.appendFileSync(outputFileName, "" + dataCOO.length + "," + rowsCOO.length + "," + colsCOO.length + "\n", function () { });
+    writeArrayToFile(dataCOO, true);
+    writeArrayToFile(rowsCOO, true);
+    writeArrayToFile(colsCOO, true);
+    writeArrayToFile(vector, false);
 
     let end = new Date().getTime() / 1000;
     console.log("Done writing matrix and vector to file in " + roundNumber(end - start) + " seconds");
@@ -200,10 +282,32 @@ function roundNumber(number) {
     return Math.round((number + Number.EPSILON) * 10000) / 10000;
 }
 
+/**
+ * 
+ * @param {*} min 
+ * @param {*} max 
+ * @returns Returns a random number between min and max which is unequal to zero and is a decimal (not a whole number)
+ */
 function getRandomNumberInRange(min, max) {
     let random = 0;
     do {
         random = Math.random();
     } while (random === 0);
-    return (random * (max - min) + min);
+    let result = 0;
+    do {
+        result = (random * (max - min) + min);
+    } while (result % 1 === 0);
+    return result;
+}
+
+function writeArrayToFile(array, addNewLine) {
+    let array_string = "";
+    for (let i = 0; i < array.length; i++) {
+        array_string += "," + array[i];
+    }
+    array_string = array_string.substring(1, array_string.length);
+    if (addNewLine) {
+        array_string += "\n";
+    }
+    fs.appendFileSync(outputFileName, array_string, function (err) { })
 }
