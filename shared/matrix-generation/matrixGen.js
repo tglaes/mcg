@@ -3,7 +3,7 @@ const fs = require('fs')
 let outputFileName = "matrix.csv";
 
 // The dimension of the matrix and the vector
-const matrixDimension = 10;
+const matrixDimension = 5;
 // The minimal value of an element on the diagonal
 const minValueDiagonalElement = 100;
 // The maximal value of an element on the diagonal
@@ -14,11 +14,13 @@ const maxValueNonDiagonalElement = 10;
 let NUMBER_OF_NON_ZERO_ENTRIES_PER_ROW = 3;
 // The amount of elements unequal to zero is NUMBER_OF_NON_ZERO_ENTRIES_PER_ROW + 1 (beacuse of the element on the diagonal)
 
+let CHANCE_FOR_ZERO_ELEMENT_IN_ELL = 0.5;
+
 // COO rows
 // The total number of COO rows in the matrix (set to zero to not use COO rows)
-let NUMBER_OF_COO_ROWS = 5;
+let NUMBER_OF_COO_ROWS = 1;
 // The amount of numbers unequal to zero in a COO row
-let NUMBER_OF_NON_ZERO_ENTRIES_IN_COO_ROW = 8;
+let NUMBER_OF_NON_ZERO_ENTRIES_IN_COO_ROW = 4;
 // An array with the indicies of COO rows
 let cooRowIndexArray;
 
@@ -221,7 +223,11 @@ function writeMatrixAndVectorToFileEllCoo() {
             }
             for (let k = j; k < matrixDimension; k++) {
                 if (matrix[i][k] !== 0) {
-                    dataEll.push(matrix[i][k]);
+                    if (Math.random() > CHANCE_FOR_ZERO_ELEMENT_IN_ELL || (k === j) || (k + 1) === matrixDimension) {
+                        dataEll.push(matrix[i][k]);
+                    } else {
+                        dataEll.push(0);
+                    }
                     colsEll.push(k);
                     currentColumnIndexMap.set(i, k + 1);
                     break;
@@ -229,7 +235,6 @@ function writeMatrixAndVectorToFileEllCoo() {
             }
         }
     }
-
     // COO
     for (let i = 0; i < cooRowIndexArray.length; i++) {
         let rowIndex = cooRowIndexArray.pop();

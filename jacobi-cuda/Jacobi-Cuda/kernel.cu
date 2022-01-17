@@ -3,6 +3,7 @@
 #include "device_launch_parameters.h"
 
 #include <stdio.h>
+#include "read_matrix_ell_coo.h"
 
 cudaError_t addWithCuda(int *c, const int *a, const int *b, unsigned int size);
 
