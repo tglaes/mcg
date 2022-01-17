@@ -1,4 +1,4 @@
-// gcc main.c read_matrix.c -o main
+// gcc main.c read_matrix.c -o main -lm
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -9,6 +9,7 @@
 void printMatrixAndVector(float *matrix, float *vector);
 void printSolution(float *vector);
 int checkIteration(float *x, float *y);
+void evaluateSolution(float *matrix, float *vector, float *x);
 
 clock_t begin, end;
 double delta;
@@ -43,14 +44,14 @@ int main(int argc, char **argv)
             {
                 if (i != j)
                 {
-                    row_result -= (matrix[i * dimension + j] * x[i]) / matrix[i * dimension + i];
+                    row_result -= (matrix[i * dimension + j] * x[i]);
                 }
                 else
                 {
-                    row_result += vector[i] / matrix[i * dimension + i];
+                    row_result += vector[i];
                 }
             }
-            y[i] = row_result;
+            y[i] = row_result / matrix[i * dimension + i];
         }
         // Check if values changed by more than EPLISON
         int iterationCheck = checkIteration(x, y);
@@ -68,8 +69,11 @@ int main(int argc, char **argv)
 
     printSolution(x);
 
-    //evaluateSolution();
-
+    evaluateSolution(matrix, vector, x);
+    free(matrix);
+    free(vector);
+    free(x);
+    free(y);
     return 0;
 }
 
@@ -85,6 +89,52 @@ int checkIteration(float *x, float *y)
         }
     }
     return 1;
+}
+
+void evaluateSolution(float *matrix, float *vector, float *x)
+{
+    float *calculated_result = calloc(dimension, sizeof(float));
+
+    // Calculate the result of matrix * x
+    for (int i = 0; i < dimension; i++)
+    {
+        for (int j = 0; j < dimension; j++)
+        {
+            calculated_result[i] += matrix[i * dimension + j] * x[i];
+        }
+    }
+
+    // Compare the calculated result and the actual result
+    double max_difference = -10000.0;
+    double min_difference = 10000.0;
+    double average_difference = 0;
+    double euclidian_distance = 0;
+
+    for (int i = 0; i < dimension; i++)
+    {
+        double absolute_difference = fabs(calculated_result[i] - vector[i]);
+        if (absolute_difference > max_difference)
+        {
+            max_difference = absolute_difference;
+        }
+        else if (absolute_difference < min_difference)
+        {
+            min_difference = absolute_difference;
+        }
+        euclidian_distance += pow(calculated_result[i] - vector[i], 2);
+        average_difference += absolute_difference;
+    }
+
+    average_difference = average_difference / dimension;
+    euclidian_distance = sqrt(euclidian_distance);
+    printSolution(vector);
+    printSolution(calculated_result);
+    printf("Max difference:     %f\n", max_difference);
+    printf("Min difference:     %f\n", min_difference);
+    printf("Average difference: %f\n", average_difference);
+    printf("Euclidian distance: %f\n", euclidian_distance);
+
+    free(calculated_result);
 }
 
 void printMatrixAndVector(float *matrix, float *vector)
