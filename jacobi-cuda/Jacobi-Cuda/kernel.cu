@@ -5,15 +5,14 @@
 #include <string.h>
 #include <stdio.h>
 
-cudaError_t addWithCuda(int *c, const int *a, const int *b, unsigned int size);
 void readMatrixAndVectorFromFile();
 void readFloatRowFormFile(FILE* fp, int size_of_row, float** data);
 void readIntRowFromFile(FILE* fp, int size_of_row, int** data);
 
-__global__ void addKernel(int *c, const int *a, const int *b)
+__global__ void test(int dimension, float* data_ell, int data_ell_size, int* cols_ell, int cols_ell_size)
 {
-    int i = threadIdx.x;
-    c[i] = a[i] + b[i];
+    int idx = blockDim.x * blockIdx.x + threadIdx.x;
+    printf("This is thread number %d\n", idx );
 }
 
 char* matrixFileName = "matrix_ell_coo_7.csv";
@@ -36,113 +35,18 @@ float* vector = NULL;
 
 int main()
 {
-    
     readMatrixAndVectorFromFile();
 
-    const int arraySize = 5;
-    const int a[arraySize] = { 1, 2, 3, 4, 5 };
-    const int b[arraySize] = { 10, 20, 30, 40, 50 };
-    int c[arraySize] = { 0 };
+    test<<<1, 10 >>> (dimension, data_ell, data_ell_size, cols_ell, cols_ell_size);
 
-    // Add vectors in parallel.
-    cudaError_t cudaStatus = addWithCuda(c, a, b, arraySize);
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "addWithCuda failed!");
-        return 1;
-    }
-
-    printf("{1,2,3,4,5} + {10,20,30,40,50} = {%d,%d,%d,%d,%d}\n",
-        c[0], c[1], c[2], c[3], c[4]);
-
-    // cudaDeviceReset must be called before exiting in order for profiling and
-    // tracing tools such as Nsight and Visual Profiler to show complete traces.
-    cudaStatus = cudaDeviceReset();
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaDeviceReset failed!");
-        return 1;
-    }
+    cudaFree(data_ell);
+    cudaFree(cols_ell);
+    cudaFree(data_coo);
+    cudaFree(rows_coo);
+    cudaFree(cols_coo);
+    cudaFree(vector);
 
     return 0;
-}
-
-// Helper function for using CUDA to add vectors in parallel.
-cudaError_t addWithCuda(int *c, const int *a, const int *b, unsigned int size)
-{
-    int *dev_a = 0;
-    int *dev_b = 0;
-    int *dev_c = 0;
-    cudaError_t cudaStatus;
-
-    // Choose which GPU to run on, change this on a multi-GPU system.
-    cudaStatus = cudaSetDevice(0);
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaSetDevice failed!  Do you have a CUDA-capable GPU installed?");
-        goto Error;
-    }
-
-    // Allocate GPU buffers for three vectors (two input, one output)    .
-    cudaStatus = cudaMalloc((void**)&dev_c, size * sizeof(int));
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaMalloc failed!");
-        goto Error;
-    }
-
-    cudaStatus = cudaMalloc((void**)&dev_a, size * sizeof(int));
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaMalloc failed!");
-        goto Error;
-    }
-
-    cudaStatus = cudaMalloc((void**)&dev_b, size * sizeof(int));
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaMalloc failed!");
-        goto Error;
-    }
-
-    // Copy input vectors from host memory to GPU buffers.
-    cudaStatus = cudaMemcpy(dev_a, a, size * sizeof(int), cudaMemcpyHostToDevice);
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaMemcpy failed!");
-        goto Error;
-    }
-
-    cudaStatus = cudaMemcpy(dev_b, b, size * sizeof(int), cudaMemcpyHostToDevice);
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaMemcpy failed!");
-        goto Error;
-    }
-
-    // Launch a kernel on the GPU with one thread for each element.
-    addKernel<<<1,size>>>(dev_c, dev_a, dev_b);
-
-    // Check for any errors launching the kernel
-    cudaStatus = cudaGetLastError();
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "addKernel launch failed: %s\n", cudaGetErrorString(cudaStatus));
-        goto Error;
-    }
-    
-    // cudaDeviceSynchronize waits for the kernel to finish, and returns
-    // any errors encountered during the launch.
-    cudaStatus = cudaDeviceSynchronize();
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaDeviceSynchronize returned error code %d after launching addKernel!\n", cudaStatus);
-        goto Error;
-    }
-
-    // Copy output vector from GPU buffer to host memory.
-    cudaStatus = cudaMemcpy(c, dev_c, size * sizeof(int), cudaMemcpyDeviceToHost);
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaMemcpy failed!");
-        goto Error;
-    }
-
-Error:
-    cudaFree(dev_c);
-    cudaFree(dev_a);
-    cudaFree(dev_b);
-    
-    return cudaStatus;
 }
 
 void readMatrixAndVectorFromFile()
@@ -156,9 +60,9 @@ void readMatrixAndVectorFromFile()
     // Lese ELL Format
     fscanf(fp, "%d,%d", &data_ell_size, &cols_ell_size);
 
-    data_ell = (float*)malloc(data_ell_size * sizeof(float));
-    cols_ell = (int*)malloc(cols_ell_size * sizeof(int));
-    vector = (float*)malloc(dimension * sizeof(float));
+    cudaMallocManaged(&data_ell, data_ell_size * sizeof(float));
+    cudaMallocManaged(&cols_ell,cols_ell_size * sizeof(int));
+    cudaMallocManaged(&vector, dimension * sizeof(float));
     readFloatRowFormFile(fp, data_ell_size, &data_ell);
     readIntRowFromFile(fp, cols_ell_size, &cols_ell);
 
@@ -177,9 +81,9 @@ void readMatrixAndVectorFromFile()
     
     // Lese COO Format
     fscanf(fp, "%d", &data_coo_size);
-    data_coo = (float*)malloc(data_coo_size * sizeof(float));
-    rows_coo = (int*)malloc(data_coo_size * sizeof(int));
-    cols_coo = (int*)malloc(data_coo_size * sizeof(int));
+    cudaMallocManaged(&data_coo, data_coo_size * sizeof(float));
+    cudaMallocManaged(&rows_coo, data_coo_size * sizeof(int));
+    cudaMallocManaged(&cols_coo, data_coo_size * sizeof(int));
     readFloatRowFormFile(fp, data_coo_size, &data_coo);
     readIntRowFromFile(fp, data_coo_size, &rows_coo);
     readIntRowFromFile(fp, data_coo_size, &cols_coo);
@@ -221,6 +125,7 @@ void readFloatRowFormFile(FILE* fp, int size_of_row, float** data) {
 
     // Lese die ELL Daten
     char* row = (char*)malloc((size_of_row * MAX_FLOAT_STRING_LENGTH + size_of_row - 1) * sizeof(char));
+    
     fscanf(fp, "%s\n", row);
     int fromIndex = 0;
     int floatsRead = 0;
@@ -234,37 +139,43 @@ void readFloatRowFormFile(FILE* fp, int size_of_row, float** data) {
             (*data)[floatsRead] = x;
             floatsRead++;
             fromIndex = k + 1;
+            free(substr);
         }
     }
-
     char* substr = (char*)malloc(MAX_FLOAT_STRING_LENGTH);
     strncpy(substr, row + fromIndex, strlen(row) - fromIndex - 1);
     (*data)[floatsRead] = atof(substr);
 
+    free(row);
+    free(substr);
     return;
 }
 
 void readIntRowFromFile(FILE* fp, int size_of_row, int** data) {
     int MAX_INT_STRING_LENGTH = 8;
     char* substr;
-    char* row_cols = (char*)malloc((size_of_row * MAX_INT_STRING_LENGTH + size_of_row - 1) * sizeof(char));
+    char* row = (char*)malloc((size_of_row * MAX_INT_STRING_LENGTH + size_of_row - 1) * sizeof(char));
 
-    fscanf(fp, "%s\n", row_cols);
+    fscanf(fp, "%s\n", row);
     int fromIndex = 0;
     int intsRead = 0;
-    for (int k = 0; k < strlen(row_cols); k++)
+    for (int k = 0; k < strlen(row); k++)
     {
-        if (row_cols[k] == ',')
+        if (row[k] == ',')
         {
             substr = (char*)malloc(MAX_INT_STRING_LENGTH);
-            strncpy(substr, row_cols + fromIndex, k - fromIndex);
+            strncpy(substr, row + fromIndex, k - fromIndex);
             (*data)[intsRead] = atoi(substr);
             intsRead++;
             fromIndex = k + 1;
+            free(substr);
         }
     }
 
     substr = (char*)malloc(MAX_INT_STRING_LENGTH);
-    strncpy(substr, row_cols + fromIndex, strlen(row_cols) - fromIndex);
+    strncpy(substr, row + fromIndex, strlen(row) - fromIndex);
     (*data)[intsRead] = atoi(substr);
+    free(row);
+    free(substr);
+    return;
 }
