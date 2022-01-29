@@ -3,7 +3,7 @@ const fs = require('fs')
 let outputFileName = "matrix.csv";
 
 // The dimension of the matrix and the vector
-const matrixDimension = 7;
+const matrixDimension = 5;
 // The minimal value of an element on the diagonal
 const minValueDiagonalElement = 100;
 // The maximal value of an element on the diagonal
@@ -11,14 +11,14 @@ const maxValueDiagonalElement = 200;
 // The maximal value of an element which is not on the diagonal
 const maxValueNonDiagonalElement = 10;
 // The amount of element per row unequal to zero (How many numbers unequal to zero should the row have)
-let NUMBER_OF_NON_ZERO_ENTRIES_PER_ROW = 4;
+let NUMBER_OF_NON_ZERO_ENTRIES_PER_ROW = 2;
 // The amount of elements unequal to zero is NUMBER_OF_NON_ZERO_ENTRIES_PER_ROW + 1 (beacuse of the element on the diagonal)
 
 let CHANCE_FOR_ZERO_ELEMENT_IN_ELL = 0.5;
 
 // COO rows
 // The total number of COO rows in the matrix (set to zero to not use COO rows)
-let NUMBER_OF_COO_ROWS = 2;
+let NUMBER_OF_COO_ROWS = 0;
 // The amount of numbers unequal to zero in a COO row
 let NUMBER_OF_NON_ZERO_ENTRIES_IN_COO_ROW = 6;
 // An array with the indicies of COO rows
@@ -35,8 +35,8 @@ generateVector();
 //printVectorAndMatrix();
 //testMatrixAndVector();
 //writeMatrixAndVectorToFile();
-//writeMatrixAndVectorToFileCsr();
-writeMatrixAndVectorToFileEllCoo();
+writeMatrixAndVectorToFileCsr();
+//writeMatrixAndVectorToFileEllCoo();
 
 function generateMatrix() {
 
