@@ -4,12 +4,14 @@
 #include <omp.h>
 #include <string.h>
 #include <math.h>
+#include <time.h>
 #include "read_matrix_csr.h"
 
 int checkIteration(float *x, float *y);
 void evaluateSolution();
 void printData();
 void freeResources();
+void printCurrentTime();
 
 int dimension = 0;
 int data_size = 0;
@@ -33,24 +35,30 @@ int main(int argc, char *argv[])
 		printf("You need to provide a matrix as argument!\n");
 		return 1;
 	}
+
+	printCurrentTime();
+
 	dimension = readMatrixAndVectorFromFile(argv[1], &data, &cols, &row_ptr, &vector, &data_size, &row_ptr_size);
 	float *x = calloc(dimension, sizeof(float));
 	float *y = calloc(dimension, sizeof(float));
 
 	double time_t = omp_get_wtime();
 
+	printCurrentTime();
+
 	// Schleife für die Iterationen
-	for (k = 1; k < 1000; k++)
+	for (k = 1; k < 10000; k++)
 	{
+		//#pragma omp parallel for
 		for (int i = 0; i < row_ptr_size - 1; i++)
 		{
 			float row_result = 0;
 			int index_of_diagonal_element;
 			for (int j = row_ptr[i]; j < row_ptr[i + 1]; j++)
 			{
-				//printf("%d ", j);
-				//printf("%f ", data[j]);
-				// i und cols[j] zusammen sind das Matrixelement matrix[i][cols[j]]
+				// printf("%d ", j);
+				// printf("%f ", data[j]);
+				//  i und cols[j] zusammen sind das Matrixelement matrix[i][cols[j]]
 				if (i != cols[j])
 				{
 					row_result -= (data[j] * x[i]);
@@ -60,13 +68,13 @@ int main(int argc, char *argv[])
 					row_result += vector[i];
 					// Der Index des Diagonalelements der aktuellen Zeile (Zeile i) im data Array
 					index_of_diagonal_element = j;
-					//printf("%d\n", j);
+					// printf("%d\n", j);
 				}
 			}
 
 			// Teilen durch das Diagonalelement
 			y[i] = row_result / data[index_of_diagonal_element];
-			//printf("\n");
+			// printf("\n");
 		}
 
 		// Überprüfen, ob sich ein Wert mehr als EPSILON verändert hat
@@ -76,16 +84,16 @@ int main(int argc, char *argv[])
 		{
 			break;
 		}
-		//printf("%f\n", x[0]);
+		// printf("%f\n", x[0]);
 	}
 
 	double time_delta = omp_get_wtime() - time_t;
 	printf("Computation finished after %d iteration(s) and took %f seconds\n", k, time_delta);
 
-	for (int i = 0; i < dimension; i++)
+	/*for (int i = 0; i < dimension; i++)
 	{
 		printf("%f\n", y[i]);
-	}
+	}*/
 
 	freeResources();
 }
@@ -96,8 +104,8 @@ int checkIteration(float *x, float *y)
 	{
 		if (fabs((fabs(x[i]) - fabs(y[i]))) > EPSILON)
 		{
-			//printf("%d ", i);
-			//printf("%f, %f, %f\n", fabs(x[i]), fabs(y[i]), fabs(x[i]) - fabs(y[i]));
+			// printf("%d ", i);
+			// printf("%f, %f, %f\n", fabs(x[i]), fabs(y[i]), fabs(x[i]) - fabs(y[i]));
 			return 0;
 		}
 	}
@@ -143,4 +151,35 @@ void freeResources()
 	free(x);
 	free(y);
 	free(vector);
+}
+
+void printCurrentTime()
+{
+	time_t current_time;
+	char *c_time_string;
+
+	/* Obtain current time. */
+	current_time = time(NULL);
+
+	if (current_time == ((time_t)-1))
+	{
+		(void)fprintf(stderr, "Failure to obtain the current time.\n");
+		exit(EXIT_FAILURE);
+	}
+
+	/* Convert to local time format. */
+	c_time_string = ctime(&current_time);
+
+	if (c_time_string == NULL)
+	{
+		(void)fprintf(stderr, "Failure to convert the current time.\n");
+		exit(EXIT_FAILURE);
+	}
+
+	char *substr = malloc(10);
+	strncpy(substr, c_time_string + 11, 10);
+	substr[8] = '\n';
+	substr[9] = '\0';
+
+	printf("Start time is %s", substr);
 }
