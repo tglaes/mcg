@@ -26,6 +26,9 @@ float *vector = NULL;
 int k;
 float EPSILON = 0.0001;
 
+double time_start;
+double time_delta;
+
 int main(int argc, char *argv[])
 {
 	printf("Jacobi OpenMP\n");
@@ -38,12 +41,16 @@ int main(int argc, char *argv[])
 	}
 
 	printCurrentTime();
-
+	time_start = omp_get_wtime();
 	dimension = readMatrixAndVectorFromFile(argv[1], &data, &cols, &row_ptr, &vector, &data_size, &row_ptr_size);
+	//printData();
+	time_delta = omp_get_wtime() - time_start;
+	printf("Reading matrix took %f seconds\n", time_delta);
+
 	x = calloc(dimension, sizeof(float));
 	y = calloc(dimension, sizeof(float));
 
-	double time_t = omp_get_wtime();
+	time_start = omp_get_wtime();
 
 	printCurrentTime();
 
@@ -88,7 +95,7 @@ int main(int argc, char *argv[])
 		// printf("%f\n", x[0]);
 	}
 
-	double time_delta = omp_get_wtime() - time_t;
+	time_delta = omp_get_wtime() - time_start;
 	printf("Computation finished after %d iteration(s) and took %f seconds\n", k, time_delta);
 	evaluateSolution();
 	/*for (int i = 0; i < dimension; i++)
@@ -153,10 +160,10 @@ void evaluateSolution()
 
 	average_difference = average_difference / dimension;
 	euclidian_distance = sqrt(euclidian_distance);
-	printf("Result vector:          ");
-	printSolution(vector);
-	printf("Calculated vector:      ");
-	printSolution(y);
+	//printf("Result vector:      ");
+	//printSolution(vector);
+	//printf("Calculated vector:  ");
+	//printSolution(y);
 	printf("Max difference:     %f\n", max_difference);
 	printf("Min difference:     %f\n", min_difference);
 	printf("Average difference: %f\n", average_difference);
@@ -167,25 +174,25 @@ void printData()
 {
 	for (int k = 0; k < data_size; k++)
 	{
-		printf("%f,", data[k]);
+		printf("%f ", data[k]);
 	}
 	printf("\n");
 
 	for (int k = 0; k < data_size; k++)
 	{
-		printf("%d,", cols[k]);
+		printf("%d ", cols[k]);
 	}
 	printf("\n");
 
 	for (int k = 0; k < row_ptr_size; k++)
 	{
-		printf("%d,", row_ptr[k]);
+		printf("%d ", row_ptr[k]);
 	}
 	printf("\n");
 
 	for (int k = 0; k < dimension; k++)
 	{
-		printf("%f,", vector[k]);
+		printf("%f ", vector[k]);
 	}
 	printf("\n");
 }
@@ -228,7 +235,7 @@ void printCurrentTime()
 	substr[8] = '\n';
 	substr[9] = '\0';
 
-	printf("Start time is %s", substr);
+	printf("Time is %s", substr);
 }
 
 void printSolution(float *vector)

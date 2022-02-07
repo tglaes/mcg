@@ -5,9 +5,9 @@ let outputFileName = "matrix.csv";
 // The dimension of the matrix and the vector
 const matrixDimension = 20000;
 // The minimal value of an element on the diagonal
-const minValueDiagonalElement = 100;
+const minValueDiagonalElement = 190;
 // The maximal value of an element on the diagonal
-const maxValueDiagonalElement = 200;
+const maxValueDiagonalElement = 2250;
 // The maximal value of an element which is not on the diagonal
 const maxValueNonDiagonalElement = 10;
 // The amount of element per row unequal to zero (How many numbers unequal to zero should the row have)
