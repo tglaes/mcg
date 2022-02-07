@@ -37,7 +37,7 @@ int main()
 {
     readMatrixAndVectorFromFile();
 
-    test<<<1, 10 >>> (dimension, data_ell, data_ell_size, cols_ell, cols_ell_size);
+    //test<<<1, 10 >>> (dimension, data_ell, data_ell_size, cols_ell, cols_ell_size);
 
     cudaFree(data_ell);
     cudaFree(cols_ell);

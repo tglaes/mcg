@@ -28,7 +28,7 @@ int main(int argc, char **argv)
     float *vector = NULL;
     dimension = readMatrixAndVectorFromFile(argv[1], &matrix, &vector);
 
-    //printMatrixAndVector(matrix, vector, dimension);
+    // printMatrixAndVector(matrix, vector, dimension);
 
     float *x = calloc(dimension, sizeof(float));
     float *y = calloc(dimension, sizeof(float));
@@ -60,13 +60,14 @@ int main(int argc, char **argv)
         {
             break;
         }
-        //printf("%f\n", x[0]);
+        // printf("%f\n", x[0]);
     }
 
     end = clock();
     delta = (double)(end - begin) / CLOCKS_PER_SEC;
     printf("Computation finished after %d iterations and took %f seconds\n", k, delta);
 
+    printf("Solution:               "));
     printSolution(x);
 
     evaluateSolution(matrix, vector, x);
@@ -83,8 +84,8 @@ int checkIteration(float *x, float *y)
     {
         if (fabs((fabs(x[i]) - fabs(y[i]))) > EPSILON)
         {
-            //printf("%d ", i);
-            //printf("%f, %f, %f\n", fabs(x[i]), fabs(y[i]), fabs(x[i]) - fabs(y[i]));
+            // printf("%d ", i);
+            // printf("%f, %f, %f\n", fabs(x[i]), fabs(y[i]), fabs(x[i]) - fabs(y[i]));
             return 0;
         }
     }
@@ -127,7 +128,9 @@ void evaluateSolution(float *matrix, float *vector, float *x)
 
     average_difference = average_difference / dimension;
     euclidian_distance = sqrt(euclidian_distance);
+    printf("Result vector:          ");
     printSolution(vector);
+    printf("Calculated vector:      ");
     printSolution(calculated_result);
     printf("Max difference:     %f\n", max_difference);
     printf("Min difference:     %f\n", min_difference);
