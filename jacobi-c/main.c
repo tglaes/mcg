@@ -67,7 +67,7 @@ int main(int argc, char **argv)
     delta = (double)(end - begin) / CLOCKS_PER_SEC;
     printf("Computation finished after %d iterations and took %f seconds\n", k, delta);
 
-    printf("Solution:               "));
+    printf("Solution:               ");
     printSolution(x);
 
     evaluateSolution(matrix, vector, x);
