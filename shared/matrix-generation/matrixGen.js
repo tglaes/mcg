@@ -1,9 +1,10 @@
+// node --max-old-space-size=4000 matrixGen.js
 const fs = require('fs')
 
 let outputFileName = "matrix.csv";
 
 // The dimension of the matrix and the vector
-const matrixDimension = 20000;
+const matrixDimension = 10000;
 // The minimal value of an element on the diagonal
 const minValueDiagonalElement = 190;
 // The maximal value of an element on the diagonal
@@ -34,8 +35,8 @@ generateMatrix();
 generateVector();
 //printVectorAndMatrix();
 //testMatrixAndVector();
-//writeMatrixAndVectorToFile();
-writeMatrixAndVectorToFileCsr();
+writeMatrixAndVectorToFile();
+//writeMatrixAndVectorToFileCsr();
 //writeMatrixAndVectorToFileEllCoo();
 
 function generateMatrix() {

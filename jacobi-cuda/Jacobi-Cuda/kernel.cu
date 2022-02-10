@@ -15,7 +15,7 @@ __global__ void test(int dimension, float* data_ell, int data_ell_size, int* col
     printf("This is thread number %d\n", idx );
 }
 
-char* matrixFileName = "matrix_ell_coo_7.csv";
+const char* matrixFileName = "matrix_ell_coo_7.csv";
 int dimension = 0;
 
 // Daten der Matrix im ELL Format
@@ -52,7 +52,6 @@ int main()
 void readMatrixAndVectorFromFile()
 {
     dimension = 0;
-    int MAX_FLOAT_STRING_LENGTH = 8;
     FILE* fp;
     fp = fopen(matrixFileName, "r");
     fscanf(fp, "%d", &dimension);
@@ -120,62 +119,36 @@ void readMatrixAndVectorFromFile()
 }
 
 void readFloatRowFormFile(FILE* fp, int size_of_row, float** data) {
-
-    int MAX_FLOAT_STRING_LENGTH = 8;
-
-    // Lese die ELL Daten
-    char* row = (char*)malloc((size_of_row * MAX_FLOAT_STRING_LENGTH + size_of_row - 1) * sizeof(char));
+    int valuesRead = 0;
+    char* row = (char*)malloc((size_of_row * 8 + size_of_row) * sizeof(char));
     
     fscanf(fp, "%s\n", row);
-    int fromIndex = 0;
-    int floatsRead = 0;
-    for (int k = 0; k < strlen(row); k++)
+    char* ptr = strtok(row, ",");
+    
+    while (ptr != NULL)
     {
-        if (row[k] == ',')
-        {
-            char* substr = (char*)malloc(MAX_FLOAT_STRING_LENGTH);
-            strncpy(substr, row + fromIndex, k - fromIndex - 1);
-            float x = atof(substr);
-            (*data)[floatsRead] = x;
-            floatsRead++;
-            fromIndex = k + 1;
-            free(substr);
-        }
+        (*data)[valuesRead] = atof(ptr);
+        valuesRead++;
+        ptr = strtok(NULL, ",");
     }
-    char* substr = (char*)malloc(MAX_FLOAT_STRING_LENGTH);
-    strncpy(substr, row + fromIndex, strlen(row) - fromIndex - 1);
-    (*data)[floatsRead] = atof(substr);
 
     free(row);
-    free(substr);
     return;
 }
 
 void readIntRowFromFile(FILE* fp, int size_of_row, int** data) {
-    int MAX_INT_STRING_LENGTH = 8;
-    char* substr;
-    char* row = (char*)malloc((size_of_row * MAX_INT_STRING_LENGTH + size_of_row - 1) * sizeof(char));
+    int valuesRead = 0;
+    char* row = (char*)malloc((size_of_row * 6 + size_of_row) * sizeof(char));
 
     fscanf(fp, "%s\n", row);
-    int fromIndex = 0;
-    int intsRead = 0;
-    for (int k = 0; k < strlen(row); k++)
+    char* ptr = strtok(row, ",");
+   
+    while (ptr != NULL)
     {
-        if (row[k] == ',')
-        {
-            substr = (char*)malloc(MAX_INT_STRING_LENGTH);
-            strncpy(substr, row + fromIndex, k - fromIndex);
-            (*data)[intsRead] = atoi(substr);
-            intsRead++;
-            fromIndex = k + 1;
-            free(substr);
-        }
+        (*data)[valuesRead] = atoi(ptr);
+        valuesRead++;
+        ptr = strtok(NULL, ",");
     }
-
-    substr = (char*)malloc(MAX_INT_STRING_LENGTH);
-    strncpy(substr, row + fromIndex, strlen(row) - fromIndex);
-    (*data)[intsRead] = atoi(substr);
     free(row);
-    free(substr);
     return;
 }

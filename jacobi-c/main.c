@@ -28,7 +28,7 @@ int main(int argc, char **argv)
     float *vector = NULL;
     dimension = readMatrixAndVectorFromFile(argv[1], &matrix, &vector);
 
-    // printMatrixAndVector(matrix, vector, dimension);
+    // printMatrixAndVector(matrix, vector);
 
     float *x = calloc(dimension, sizeof(float));
     float *y = calloc(dimension, sizeof(float));
@@ -67,8 +67,8 @@ int main(int argc, char **argv)
     delta = (double)(end - begin) / CLOCKS_PER_SEC;
     printf("Computation finished after %d iterations and took %f seconds\n", k, delta);
 
-    printf("Solution:               ");
-    printSolution(x);
+    // printf("Solution:               ");
+    // printSolution(x);
 
     evaluateSolution(matrix, vector, x);
     free(matrix);
@@ -128,10 +128,10 @@ void evaluateSolution(float *matrix, float *vector, float *x)
 
     average_difference = average_difference / dimension;
     euclidian_distance = sqrt(euclidian_distance);
-    printf("Result vector:          ");
-    printSolution(vector);
-    printf("Calculated vector:      ");
-    printSolution(calculated_result);
+    // printf("Result vector:          ");
+    // printSolution(vector);
+    // printf("Calculated vector:      ");
+    // printSolution(calculated_result);
     printf("Max difference:     %f\n", max_difference);
     printf("Min difference:     %f\n", min_difference);
     printf("Average difference: %f\n", average_difference);

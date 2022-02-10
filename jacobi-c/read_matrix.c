@@ -6,54 +6,39 @@
 int readMatrixAndVectorFromFile(char *fileName, float **matrix, float **vector)
 {
     int dimension = 0;
-    int MAX_FLOAT_STRING_LENGTH = 8;
     FILE *fp;
     fp = fopen(fileName, "r");
     fscanf(fp, "%d", &dimension);
+    int valuesRead = 0;
+    char *ptr;
 
-    char *row = malloc((dimension * MAX_FLOAT_STRING_LENGTH + dimension - 1) * sizeof(char));
-
+    char *row = malloc((dimension * 10 + dimension - 1) * sizeof(char));
     *matrix = malloc(dimension * dimension * sizeof(float));
     *vector = malloc(dimension * sizeof(float));
 
     for (int i = 0; i < dimension; i++)
     {
         fscanf(fp, "%s\n", row);
-        int fromIndex = 0;
-        int floatsRead = 0;
-        for (int k = 0; k < strlen(row); k++)
+        ptr = strtok(row, ",");
+        valuesRead = 0;
+        while (ptr != NULL)
         {
-            if (row[k] == ',')
-            {
-                char *substr = malloc(MAX_FLOAT_STRING_LENGTH);
-                strncpy(substr, row + fromIndex, k - fromIndex - 1);
-                (*matrix)[i * dimension + floatsRead] = atof(substr);
-                floatsRead++;
-                fromIndex = k + 1;
-            }
+            (*matrix)[i * dimension + valuesRead] = atof(ptr);
+            valuesRead++;
+            ptr = strtok(NULL, ",");
         }
-        char *substr = malloc(MAX_FLOAT_STRING_LENGTH);
-        strncpy(substr, row + fromIndex, strlen(row) - fromIndex - 1);
-        (*matrix)[i * dimension + floatsRead] = atof(substr);
     }
 
+    valuesRead = 0;
     fscanf(fp, "%s\n", row);
-    int fromIndex = 0;
-    int floatsRead = 0;
-    for (int k = 0; k < strlen(row); k++)
+    ptr = strtok(row, ",");
+    valuesRead = 0;
+    while (ptr != NULL)
     {
-        if (row[k] == ',')
-        {
-            char *substr = malloc(MAX_FLOAT_STRING_LENGTH);
-            strncpy(substr, row + fromIndex, k - fromIndex - 1);
-            (*vector)[floatsRead] = atof(substr);
-            floatsRead++;
-            fromIndex = k + 1;
-        }
+        (*vector)[valuesRead] = atof(ptr);
+        valuesRead++;
+        ptr = strtok(NULL, ",");
     }
-    char *substr = malloc(MAX_FLOAT_STRING_LENGTH);
-    strncpy(substr, row + fromIndex, strlen(row) - fromIndex - 1);
-    (*vector)[floatsRead] = atof(substr);
 
     fclose(fp);
     return dimension;
