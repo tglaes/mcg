@@ -4,24 +4,24 @@ const fs = require('fs')
 let outputFileName = "matrix.csv";
 
 // The dimension of the matrix and the vector
-const matrixDimension = 10000;
+const matrixDimension = 15;
 // The minimal value of an element on the diagonal
 const minValueDiagonalElement = 190;
 // The maximal value of an element on the diagonal
-const maxValueDiagonalElement = 2250;
+const maxValueDiagonalElement = 250;
 // The maximal value of an element which is not on the diagonal
 const maxValueNonDiagonalElement = 10;
 // The amount of element per row unequal to zero (How many numbers unequal to zero should the row have)
-let NUMBER_OF_NON_ZERO_ENTRIES_PER_ROW = 10;
+let NUMBER_OF_NON_ZERO_ENTRIES_PER_ROW = 6;
 // The amount of elements unequal to zero is NUMBER_OF_NON_ZERO_ENTRIES_PER_ROW + 1 (beacuse of the element on the diagonal)
 
 let CHANCE_FOR_ZERO_ELEMENT_IN_ELL = 0.5;
 
 // COO rows
 // The total number of COO rows in the matrix (set to zero to not use COO rows)
-let NUMBER_OF_COO_ROWS = 0;
+let NUMBER_OF_COO_ROWS = 3;
 // The amount of numbers unequal to zero in a COO row
-let NUMBER_OF_NON_ZERO_ENTRIES_IN_COO_ROW = 6;
+let NUMBER_OF_NON_ZERO_ENTRIES_IN_COO_ROW = 12;
 // An array with the indicies of COO rows
 let cooRowIndexArray;
 
@@ -35,9 +35,9 @@ generateMatrix();
 generateVector();
 //printVectorAndMatrix();
 //testMatrixAndVector();
-writeMatrixAndVectorToFile();
+//writeMatrixAndVectorToFile();
 //writeMatrixAndVectorToFileCsr();
-//writeMatrixAndVectorToFileEllCoo();
+writeMatrixAndVectorToFileEllCoo();
 
 function generateMatrix() {
 
@@ -272,11 +272,11 @@ function writeMatrixAndVectorToFileEllCoo() {
         console.log("");
     */
 
-    fs.writeFileSync(outputFileName, "" + matrixDimension + "\n", function () { });
+    fs.writeFileSync(outputFileName, "" + matrixDimension + "," + (1 + NUMBER_OF_NON_ZERO_ENTRIES_PER_ROW) + "\n", function () { });
     fs.appendFileSync(outputFileName, "" + dataEll.length + "," + colsEll.length + "\n", function () { });
     writeArrayToFile(dataEll, true);
     writeArrayToFile(colsEll, true);
-    fs.appendFileSync(outputFileName, "" + dataCOO.length + "\n", function () { });
+    fs.appendFileSync(outputFileName, "" + dataCOO.length + "," + (NUMBER_OF_NON_ZERO_ENTRIES_IN_COO_ROW + 1) + "\n", function () { });
     writeArrayToFile(dataCOO, true);
     writeArrayToFile(rowsCOO, true);
     writeArrayToFile(colsCOO, true);

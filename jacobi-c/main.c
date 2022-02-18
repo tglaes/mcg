@@ -82,7 +82,7 @@ int checkIteration(float *x, float *y)
 {
     for (int i = 0; i < dimension; i++)
     {
-        if (fabs((fabs(x[i]) - fabs(y[i]))) > EPSILON)
+        if (fabs(x[i] - y[i]) > EPSILON)
         {
             // printf("%d ", i);
             // printf("%f, %f, %f\n", fabs(x[i]), fabs(y[i]), fabs(x[i]) - fabs(y[i]));

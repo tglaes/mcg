@@ -43,7 +43,7 @@ int main(int argc, char *argv[])
 	printCurrentTime();
 	time_start = omp_get_wtime();
 	dimension = readMatrixAndVectorFromFile(argv[1], &data, &cols, &row_ptr, &vector, &data_size, &row_ptr_size);
-	//printData();
+	// printData();
 	time_delta = omp_get_wtime() - time_start;
 	printf("Reading matrix took %f seconds\n", time_delta);
 
@@ -112,9 +112,8 @@ int checkIteration(float *x, float *y)
 #pragma omp parallel for shared(counter)
 	for (int i = 0; i < dimension; i++)
 	{
-		// TODO schauen ob (fabs(x[i]) - fabs(y[i]) weglassen kann
 		// Counter
-		if (fabs((fabs(x[i]) - fabs(y[i]))) > EPSILON)
+		if (fabs(x[i] - y[i]) > EPSILON)
 		{
 			// printf("%d ", i);
 			// printf("%f, %f, %f\n", fabs(x[i]), fabs(y[i]), fabs(x[i]) - fabs(y[i]));
@@ -160,10 +159,10 @@ void evaluateSolution()
 
 	average_difference = average_difference / dimension;
 	euclidian_distance = sqrt(euclidian_distance);
-	//printf("Result vector:      ");
-	//printSolution(vector);
-	//printf("Calculated vector:  ");
-	//printSolution(y);
+	// printf("Result vector:      ");
+	// printSolution(vector);
+	// printf("Calculated vector:  ");
+	// printSolution(y);
 	printf("Max difference:     %f\n", max_difference);
 	printf("Min difference:     %f\n", min_difference);
 	printf("Average difference: %f\n", average_difference);
