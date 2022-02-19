@@ -6,11 +6,17 @@
 #include <stdio.h>
 #include <math.h>
 
+#ifndef __CUDACC__
+#define __CUDACC__
+#include <device_functions.h>
+#endif
+#include <string>
+
 void readMatrixAndVectorFromFile();
 void readFloatRowFormFile(FILE* fp, int size_of_row, float** data);
 void readIntRowFromFile(FILE* fp, int size_of_row, int** data);
 int calculate_grid_dimension(int matrix_dimension);
-__global__ void jacobi(int dimension, float* data_ell, int data_ell_size, int* cols_ell, int cols_ell_size);
+__global__ void jacobi(int matrix_dimension, int* prefix_array, int* rows_coo, int data_coo_size, int size_of_coo_row);
 
 const char* matrix_file_name = "matrix_ell_coo_15.csv";
 int matrix_dimension = 0;
@@ -32,11 +38,15 @@ int* cols_coo = NULL;
 // Der Ergebnisvektor
 float* vector = NULL;
 
+// Prefix array
+int* prefix_array = NULL;
+
 int main()
 {
     readMatrixAndVectorFromFile();
     int grid_dimension = calculate_grid_dimension(matrix_dimension);
-    jacobi<<<grid_dimension, 1024 >>> (matrix_dimension, data_ell, data_ell_size, cols_ell, cols_ell_size);
+    cudaMallocManaged(&prefix_array, data_coo_size/ size_of_coo_row);
+    jacobi<<<grid_dimension, 1024 >>> (matrix_dimension, prefix_array ,rows_coo, data_coo_size, size_of_coo_row);
 
     cudaFree(data_ell);
     cudaFree(cols_ell);
@@ -48,11 +58,46 @@ int main()
     return 0;
 }
 
-__global__ void jacobi(int dimension, float* data_ell, int data_ell_size, int* cols_ell, int cols_ell_size)
+__global__ void jacobi(int matrix_dimension, int* prefix_array, int* rows_coo, int data_coo_size, int size_of_coo_row)
 {
     int idx = blockDim.x * blockIdx.x + threadIdx.x;
-    if (idx < dimension) {
+
+    if (idx < (data_coo_size / size_of_coo_row)) {
+        printf("IDX:%d = %d\n", idx, rows_coo[idx * size_of_coo_row]);
+        prefix_array[idx] = rows_coo[idx * size_of_coo_row];
+    }
+
+    __syncthreads();
+
+    if (idx < matrix_dimension) {
         printf("This is thread number %d\n", idx);
+
+        int row_offset = 0;
+        bool is_coo_row = false;
+
+        for (int i = 0; i < (data_coo_size / size_of_coo_row); i++) {
+            if (prefix_array[i] == idx) {
+                // Zeile ist eine COO Zeile
+                is_coo_row = true;
+                break;
+            }
+            else {
+                // Zeile ist eine ELL Zeile
+                // Berechne row_offset (Wie viele COO Zeilen gab es bis idx)
+                if (prefix_array[i] < idx) {
+                    row_offset++;
+                }
+                else {
+                    break;
+                }
+            }
+        }
+        if (is_coo_row) {
+            printf("IDX:%d is a COO row\n", idx);
+        }
+        else {
+            printf("IDX:%d is a ELL row with row_offset %d\n", idx, row_offset);
+        }
     }
 }
 
