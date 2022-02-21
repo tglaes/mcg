@@ -19,8 +19,9 @@ int calculate_grid_dimension(int matrix_dimension);
 __global__ void jacobi(int matrix_dimension, int* prefix_array, int* rows_coo, int offset_array_size, float* data_ell, int* cols_ell, int size_of_ell_row, float* x, float* y, int data_ell_size, float* vector, int data_coo_size, int size_of_coo_row, float* data_coo, int* cols_coo);
 __global__ void offset(int* offset_array, int* rows_coo, int data_coo_size, int size_of_coo_row);
 __global__ void init_result_vector(int matrix_dimension, float* vector);
+__global__ void check_iteration(int matrix_dimension, float EPSILON, float* x, float* y, bool* result);
 
-const char* matrix_file_name = "matrix_ell_coo_15.csv";
+const char* matrix_file_name = "matrix_ell_coo_7.csv";
 int matrix_dimension = 0;
 
 // Daten der Matrix im ELL Format
@@ -47,6 +48,9 @@ int* offset_array = NULL;
 float* x = NULL;
 float* y = NULL;
 
+float EPSILON = 0.0001;
+bool iteration_result;
+
 int main()
 {
     // Lese Matrix und Vektor aus der Eingabedatei
@@ -68,13 +72,25 @@ int main()
     cudaDeviceSynchronize();
 
     // Starte die Jacobi Iterationen
-    for (int k = 0; k < 1; k++) {
+    int k;
+    for (k = 1; k < 1000; k++) {
         jacobi<<<grid_dimension, 1024>>> (matrix_dimension, offset_array, rows_coo, (data_coo_size/ size_of_coo_row), data_ell, cols_ell, size_of_ell_row, x, y, data_ell_size, vector, data_coo_size, size_of_coo_row, data_coo, cols_coo);
         cudaDeviceSynchronize();
-        // check Iteration
+        check_iteration <<<grid_dimension, 1024 >>>(matrix_dimension, EPSILON, x, y, &iteration_result);
+        cudaDeviceSynchronize();
+        if (!iteration_result) {
+            break;
+        }
     }
+    printf("Computation finished after %d iteration(s)\n", k);
+    for (int i = 0; i < matrix_dimension; i++) {
+        printf("%f ", y[i]);
+    }
+    printf("\n");
 
-    // evaluate result
+
+
+    // evaluate solution
 
     cudaDeviceSynchronize();
 
@@ -95,11 +111,31 @@ __global__ void init_result_vector(int matrix_dimension, float* vector) {
     }
 }
 
+/// <summary>
+/// 
+/// </summary>
+/// <param name="matrix_dimension">Die Dimension der Matrix</param>
+/// <param name="EPSILON">Der Schwellenwert für die Änderung seit der letzten Iteration</param>
+/// <param name="x">Der Vektor der Iteration i-1</param>
+/// <param name="y">Der Vektor der Iteration i</param>
+/// <param name="result">Gibt als result true zurück falls mindestens ein Wert sich seit der letzten Iteration um mindestens EPSILON verändert hat</param>
+__global__ void check_iteration(int matrix_dimension, float EPSILON, float* x, float* y, bool* result) {
+    int idx = blockDim.x * blockIdx.x + threadIdx.x;
+
+    __shared__ bool iteration_result;
+
+    if (idx < matrix_dimension) {
+        if (fabs(x[idx] - y[idx]) > EPSILON) {
+            iteration_result = true;
+        }
+    }
+}
+
 __global__ void offset(int* offset_array, int* rows_coo, int data_coo_size, int size_of_coo_row) {
     int idx = blockDim.x * blockIdx.x + threadIdx.x;
 
     if (idx < (data_coo_size / size_of_coo_row)) {
-        printf("IDX:%d = %d\n", idx, rows_coo[idx * size_of_coo_row]);
+        //printf("IDX:%d = %d\n", idx, rows_coo[idx * size_of_coo_row]);
         offset_array[idx] = rows_coo[idx * size_of_coo_row];
     }
 }
@@ -109,7 +145,7 @@ __global__ void jacobi(int matrix_dimension, int* offset_array, int* rows_coo, i
     int idx = blockDim.x * blockIdx.x + threadIdx.x;
 
     if (idx < matrix_dimension) {
-        printf("This is thread number %d\n", idx);
+        //printf("This is thread number %d\n", idx);
 
         int row_offset = 0;
         int i;
@@ -134,7 +170,7 @@ __global__ void jacobi(int matrix_dimension, int* offset_array, int* rows_coo, i
             }
         }
         if (is_coo_row) {
-            printf("IDX:%d is a COO row\n", idx);          
+            //printf("IDX:%d is a COO row\n", idx);          
             for (int m = i*size_of_coo_row; m < size_of_coo_row; m++) {
 
                 if (idx != cols_coo[m]) {
@@ -145,21 +181,27 @@ __global__ void jacobi(int matrix_dimension, int* offset_array, int* rows_coo, i
                     index_of_diagonal_element = m;
                 }
             }
+            printf("Diagonal element coo %f\n", data_ell[index_of_diagonal_element]);
             y[idx] = y[idx] / data_coo[index_of_diagonal_element];
         }
         else {
-            printf("IDX:%d is a ELL row with row_offset %d\n", idx, row_offset);
+            if(idx ==2){
+            //printf("IDX:%d is a ELL row with row_offset %d\n", idx, row_offset);
             for (int i = idx - row_offset; i < data_ell_size; i = i + size_of_ell_row) {
 
+                printf("IDX=%d value = %f, column=%d, i=%d\n", idx, data_ell[i], cols_ell[i], i);
                 if (idx != cols_ell[i]) {
                     y[idx] -= data_ell[i] * x[cols_ell[i]];
                 }
                 else {
                     y[idx] += vector[idx];
                     index_of_diagonal_element = i;
+                    //printf("IDX=%d index_of_diagonal_element = %d\n", idx, i);
                 }
             }
+            printf("Diagonal element ell %d %f\n", idx, data_ell[index_of_diagonal_element]);
             y[idx] = y[idx] / data_ell[index_of_diagonal_element];
+            }
         }
     }
 }

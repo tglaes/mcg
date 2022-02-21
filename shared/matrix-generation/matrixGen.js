@@ -4,24 +4,24 @@ const fs = require('fs')
 let outputFileName = "matrix.csv";
 
 // The dimension of the matrix and the vector
-const matrixDimension = 30000;
+const matrixDimension = 7;
 // The minimal value of an element on the diagonal
 const minValueDiagonalElement = 190;
 // The maximal value of an element on the diagonal
 const maxValueDiagonalElement = 250;
 // The maximal value of an element which is not on the diagonal
-const maxValueNonDiagonalElement = 5;
+const maxValueNonDiagonalElement = 7;
 // The amount of element per row unequal to zero (How many numbers unequal to zero should the row have)
-let NUMBER_OF_NON_ZERO_ENTRIES_PER_ROW = 6;
+let NUMBER_OF_NON_ZERO_ENTRIES_PER_ROW = 3;
 // The amount of elements unequal to zero is NUMBER_OF_NON_ZERO_ENTRIES_PER_ROW + 1 (beacuse of the element on the diagonal)
 
 let CHANCE_FOR_ZERO_ELEMENT_IN_ELL = 0.5;
 
 // COO rows
 // The total number of COO rows in the matrix (set to zero to not use COO rows)
-let NUMBER_OF_COO_ROWS = 0;
+let NUMBER_OF_COO_ROWS = 2;
 // The amount of numbers unequal to zero in a COO row
-let NUMBER_OF_NON_ZERO_ENTRIES_IN_COO_ROW = 12;
+let NUMBER_OF_NON_ZERO_ENTRIES_IN_COO_ROW = 5;
 // An array with the indicies of COO rows
 let cooRowIndexArray;
 
@@ -35,9 +35,9 @@ generateMatrix();
 generateVector();
 //printVectorAndMatrix();
 //testMatrixAndVector();
-writeMatrixAndVectorToFile();
-writeMatrixAndVectorToFileCsr();
-//writeMatrixAndVectorToFileEllCoo();
+//writeMatrixAndVectorToFile();
+//writeMatrixAndVectorToFileCsr();
+writeMatrixAndVectorToFileEllCoo();
 
 function generateMatrix() {
 
@@ -224,7 +224,7 @@ function writeMatrixAndVectorToFileEllCoo() {
             }
             for (let k = j; k < matrixDimension; k++) {
                 if (matrix[i][k] !== 0) {
-                    if (Math.random() > CHANCE_FOR_ZERO_ELEMENT_IN_ELL || (k === j) || (k + 1) === matrixDimension) {
+                    if (Math.random() > CHANCE_FOR_ZERO_ELEMENT_IN_ELL || matrix[i][k] >= minValueDiagonalElement || (k + 1) === matrixDimension) {
                         dataEll.push(matrix[i][k]);
                     } else {
                         dataEll.push(0);
@@ -237,7 +237,8 @@ function writeMatrixAndVectorToFileEllCoo() {
         }
     }
     // COO
-    for (let i = 0; i < cooRowIndexArray.length; i++) {
+    const cooRowIndexArrayLength = cooRowIndexArray.length;
+    for (let i = 0; i < cooRowIndexArrayLength; i++) {
         let rowIndex = cooRowIndexArray.pop();
         for (let j = 0; j < matrixDimension; j++) {
             if (matrix[rowIndex][j] !== 0) {
