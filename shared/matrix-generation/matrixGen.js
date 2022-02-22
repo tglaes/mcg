@@ -15,13 +15,13 @@ const maxValueNonDiagonalElement = 7;
 let NUMBER_OF_NON_ZERO_ENTRIES_PER_ROW = 3;
 // The amount of elements unequal to zero is NUMBER_OF_NON_ZERO_ENTRIES_PER_ROW + 1 (beacuse of the element on the diagonal)
 
-let CHANCE_FOR_ZERO_ELEMENT_IN_ELL = 0.5;
+let CHANCE_FOR_ZERO_ELEMENT_IN_ELL = 0.25;
 
 // COO rows
 // The total number of COO rows in the matrix (set to zero to not use COO rows)
 let NUMBER_OF_COO_ROWS = 2;
 // The amount of numbers unequal to zero in a COO row
-let NUMBER_OF_NON_ZERO_ENTRIES_IN_COO_ROW = 5;
+let NUMBER_OF_NON_ZERO_ENTRIES_IN_COO_ROW = 6;
 // An array with the indicies of COO rows
 let cooRowIndexArray;
 
@@ -33,7 +33,7 @@ const vector = Array(matrixDimension);
 
 generateMatrix();
 generateVector();
-//printVectorAndMatrix();
+printVectorAndMatrix();
 //testMatrixAndVector();
 //writeMatrixAndVectorToFile();
 //writeMatrixAndVectorToFileCsr();
@@ -214,15 +214,16 @@ function writeMatrixAndVectorToFileEllCoo() {
     let start = new Date().getTime() / 1000;
 
     // ELL
-    for (let j = 0; j < matrixDimension; j++) {
+    for (let j = 0; j < (NUMBER_OF_NON_ZERO_ENTRIES_PER_ROW + 1); j++) {
         for (let i = 0; i < matrixDimension; i++) {
             if (cooRowIndexArray.findIndex(x => x === i) !== -1) {
                 continue;
             }
-            if (currentColumnIndexMap.get(i) >= j) {
-                j = currentColumnIndexMap.get(i);
+            let currentColumIndex = 0;
+            if (currentColumnIndexMap.get(i) >= currentColumIndex) {
+                currentColumIndex = currentColumnIndexMap.get(i);
             }
-            for (let k = j; k < matrixDimension; k++) {
+            for (let k = currentColumIndex; k < matrixDimension; k++) {
                 if (matrix[i][k] !== 0) {
                     if (Math.random() > CHANCE_FOR_ZERO_ELEMENT_IN_ELL || matrix[i][k] >= minValueDiagonalElement || (k + 1) === matrixDimension) {
                         dataEll.push(matrix[i][k]);
@@ -248,30 +249,30 @@ function writeMatrixAndVectorToFileEllCoo() {
             }
         }
     }
-    /*
-        for (let i = 0; i < dataEll.length; i++) {
-            process.stdout.write(dataEll[i] + ", ");
-        }
-        console.log("");
-        for (let i = 0; i < colsEll.length; i++) {
-            process.stdout.write(colsEll[i] + ", ");
-        }
-        console.log("");
-    
-        for (let i = 0; i < dataCOO.length; i++) {
-            process.stdout.write(dataCOO[i] + ", ");
-        }
-        console.log("");
-        for (let i = 0; i < rowsCOO.length; i++) {
-            process.stdout.write(rowsCOO[i] + ", ");
-        }
-        console.log("");
-    
-        for (let i = 0; i < colsCOO.length; i++) {
-            process.stdout.write(colsCOO[i] + ", ");
-        }
-        console.log("");
-    */
+
+    for (let i = 0; i < dataEll.length; i++) {
+        process.stdout.write(dataEll[i] + ", ");
+    }
+    console.log("");
+    for (let i = 0; i < colsEll.length; i++) {
+        process.stdout.write(colsEll[i] + ", ");
+    }
+    console.log("");
+
+    for (let i = 0; i < dataCOO.length; i++) {
+        process.stdout.write(dataCOO[i] + ", ");
+    }
+    console.log("");
+    for (let i = 0; i < rowsCOO.length; i++) {
+        process.stdout.write(rowsCOO[i] + ", ");
+    }
+    console.log("");
+
+    for (let i = 0; i < colsCOO.length; i++) {
+        process.stdout.write(colsCOO[i] + ", ");
+    }
+    console.log("");
+
 
     fs.writeFileSync(outputFileName, "" + matrixDimension + "," + (1 + NUMBER_OF_NON_ZERO_ENTRIES_PER_ROW) + "\n", function () { });
     fs.appendFileSync(outputFileName, "" + dataEll.length + "," + colsEll.length + "\n", function () { });

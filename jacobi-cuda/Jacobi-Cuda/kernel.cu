@@ -21,7 +21,7 @@ __global__ void offset(int* offset_array, int* rows_coo, int data_coo_size, int 
 __global__ void init_result_vector(int matrix_dimension, float* vector);
 __global__ void check_iteration(int matrix_dimension, float EPSILON, float* x, float* y, bool* result);
 
-const char* matrix_file_name = "matrix_ell_coo_7.csv";
+const char* matrix_file_name = "matrix_ell_coo_4.csv";
 int matrix_dimension = 0;
 
 // Daten der Matrix im ELL Format
@@ -185,7 +185,6 @@ __global__ void jacobi(int matrix_dimension, int* offset_array, int* rows_coo, i
             y[idx] = y[idx] / data_coo[index_of_diagonal_element];
         }
         else {
-            if(idx ==2){
             //printf("IDX:%d is a ELL row with row_offset %d\n", idx, row_offset);
             for (int i = idx - row_offset; i < data_ell_size; i = i + size_of_ell_row) {
 
@@ -201,7 +200,6 @@ __global__ void jacobi(int matrix_dimension, int* offset_array, int* rows_coo, i
             }
             printf("Diagonal element ell %d %f\n", idx, data_ell[index_of_diagonal_element]);
             y[idx] = y[idx] / data_ell[index_of_diagonal_element];
-            }
         }
     }
 }

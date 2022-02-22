@@ -5,5 +5,5 @@ C:\Users\Tristan Glaes\Projects\mcg\jacobi-cuda\Jacobi-CUDA\kernel.cu(125): warn
   
   kernel.cu
 C:\Users\Tristan Glaes\Projects\mcg\jacobi-cuda\Jacobi-CUDA\kernel.cu(51): warning C4305: 'initializing': truncation from 'double' to 'float'
-C:\Users\Tristan Glaes\Projects\mcg\jacobi-cuda\Jacobi-CUDA\kernel.cu(290): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+C:\Users\Tristan Glaes\Projects\mcg\jacobi-cuda\Jacobi-CUDA\kernel.cu(288): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
   Jacobi-Cuda.vcxproj -> C:\Users\Tristan Glaes\Projects\mcg\jacobi-cuda\Jacobi-CUDA\x64\Debug\Jacobi-Cuda.exe
