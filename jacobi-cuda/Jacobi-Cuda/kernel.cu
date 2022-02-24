@@ -20,8 +20,9 @@ __global__ void jacobi(int matrix_dimension, int* prefix_array, int* rows_coo, i
 __global__ void offset(int* offset_array, int* rows_coo, int data_coo_size, int size_of_coo_row);
 __global__ void init_result_vector(int matrix_dimension, float* vector);
 __global__ void check_iteration(int matrix_dimension, float EPSILON, float* x, float* y, bool* result);
+__global__ void copyMemory(int matrix_dimension, float* x, float* y);
 
-const char* matrix_file_name = "matrix_ell_coo_4.csv";
+const char* matrix_file_name = "matrix_ell_coo_7.csv";
 int matrix_dimension = 0;
 
 // Daten der Matrix im ELL Format
@@ -49,7 +50,12 @@ float* x = NULL;
 float* y = NULL;
 
 float EPSILON = 0.0001;
-bool iteration_result;
+// Gibt an ob sich mindestens ein Wert aus der letzten Iteration sich um mindestens Epsilon verändert hat
+bool* did_iteration_change_more_than_epsilon;
+
+cudaError_t error;
+cudaEvent_t start, stop;
+float milliseconds = 0;
 
 int main()
 {
@@ -65,33 +71,47 @@ int main()
 
     // Vektor für das Zwischenergebnis
     cudaMallocManaged(&y, matrix_dimension);
+    cudaMallocHost(&did_iteration_change_more_than_epsilon, sizeof(bool));
 
     // Initializiere und berechne Offset Array
     cudaMallocManaged(&offset_array, data_coo_size / size_of_coo_row);
     offset<<<1,1024>>> (offset_array, rows_coo, data_coo_size, size_of_coo_row);
     cudaDeviceSynchronize();
 
+    // Events zum Messen der Zeit
+    cudaEventCreate(&start);
+    cudaEventCreate(&stop);
+    // Start der Zeitmessung
+    cudaEventRecord(start);
+
     // Starte die Jacobi Iterationen
     int k;
-    for (k = 1; k < 1000; k++) {
+    for (k = 1; k < 100; k++) {
         jacobi<<<grid_dimension, 1024>>> (matrix_dimension, offset_array, rows_coo, (data_coo_size/ size_of_coo_row), data_ell, cols_ell, size_of_ell_row, x, y, data_ell_size, vector, data_coo_size, size_of_coo_row, data_coo, cols_coo);
-        cudaDeviceSynchronize();
-        check_iteration <<<grid_dimension, 1024 >>>(matrix_dimension, EPSILON, x, y, &iteration_result);
-        cudaDeviceSynchronize();
-        if (!iteration_result) {
+        error = cudaDeviceSynchronize();
+        check_iteration << <grid_dimension, 1024 >> >(matrix_dimension, EPSILON, x, y, did_iteration_change_more_than_epsilon);
+        error = cudaDeviceSynchronize();
+        if (!(*did_iteration_change_more_than_epsilon)) {
             break;
         }
+        else {
+            *did_iteration_change_more_than_epsilon = false;
+        }
+        copyMemory << <grid_dimension, 1024 >> > (matrix_dimension, x, y);
+        error = cudaDeviceSynchronize();
     }
-    printf("Computation finished after %d iteration(s)\n", k);
+
+    // Ende der Zeitmessung
+    cudaEventRecord(stop);
+    cudaEventSynchronize(stop);
+    cudaEventElapsedTime(&milliseconds, start, stop);
+
+    printf("Computation finished after %f milliseconds and took %d iteration(s)\n", milliseconds, k);
+    
+    // TODO evaluate solution
     for (int i = 0; i < matrix_dimension; i++) {
-        printf("%f ", y[i]);
+        printf("Vector[%d] = %f\n", i, x[i]);
     }
-    printf("\n");
-
-
-
-    // evaluate solution
-
     cudaDeviceSynchronize();
 
     cudaFree(data_ell);
@@ -100,6 +120,9 @@ int main()
     cudaFree(rows_coo);
     cudaFree(cols_coo);
     cudaFree(vector);
+    cudaFree(x);
+    cudaFree(y);
+    cudaFree(did_iteration_change_more_than_epsilon);
 
     return 0;
 }
@@ -111,22 +134,19 @@ __global__ void init_result_vector(int matrix_dimension, float* vector) {
     }
 }
 
-/// <summary>
-/// 
-/// </summary>
-/// <param name="matrix_dimension">Die Dimension der Matrix</param>
-/// <param name="EPSILON">Der Schwellenwert für die Änderung seit der letzten Iteration</param>
-/// <param name="x">Der Vektor der Iteration i-1</param>
-/// <param name="y">Der Vektor der Iteration i</param>
-/// <param name="result">Gibt als result true zurück falls mindestens ein Wert sich seit der letzten Iteration um mindestens EPSILON verändert hat</param>
+__global__ void copyMemory(int matrix_dimension, float* x, float* y) {
+    int idx = blockDim.x * blockIdx.x + threadIdx.x;
+    if (idx < matrix_dimension) {
+        x[idx] = y[idx];
+    }
+}
+
 __global__ void check_iteration(int matrix_dimension, float EPSILON, float* x, float* y, bool* result) {
     int idx = blockDim.x * blockIdx.x + threadIdx.x;
 
-    __shared__ bool iteration_result;
-
     if (idx < matrix_dimension) {
         if (fabs(x[idx] - y[idx]) > EPSILON) {
-            iteration_result = true;
+            *result = true;
         }
     }
 }
@@ -135,7 +155,6 @@ __global__ void offset(int* offset_array, int* rows_coo, int data_coo_size, int 
     int idx = blockDim.x * blockIdx.x + threadIdx.x;
 
     if (idx < (data_coo_size / size_of_coo_row)) {
-        //printf("IDX:%d = %d\n", idx, rows_coo[idx * size_of_coo_row]);
         offset_array[idx] = rows_coo[idx * size_of_coo_row];
     }
 }
@@ -145,8 +164,6 @@ __global__ void jacobi(int matrix_dimension, int* offset_array, int* rows_coo, i
     int idx = blockDim.x * blockIdx.x + threadIdx.x;
 
     if (idx < matrix_dimension) {
-        //printf("This is thread number %d\n", idx);
-
         int row_offset = 0;
         int i;
         bool is_coo_row = false;
@@ -171,8 +188,8 @@ __global__ void jacobi(int matrix_dimension, int* offset_array, int* rows_coo, i
         }
         if (is_coo_row) {
             //printf("IDX:%d is a COO row\n", idx);          
-            for (int m = i*size_of_coo_row; m < size_of_coo_row; m++) {
-
+            for (int m = i*size_of_coo_row; m < (i * size_of_coo_row) + size_of_coo_row; m++) {
+                
                 if (idx != cols_coo[m]) {
                     y[idx] -= data_coo[m] * x[cols_coo[m]];
                 }
@@ -181,24 +198,18 @@ __global__ void jacobi(int matrix_dimension, int* offset_array, int* rows_coo, i
                     index_of_diagonal_element = m;
                 }
             }
-            printf("Diagonal element coo %f\n", data_ell[index_of_diagonal_element]);
             y[idx] = y[idx] / data_coo[index_of_diagonal_element];
         }
         else {
-            //printf("IDX:%d is a ELL row with row_offset %d\n", idx, row_offset);
-            for (int i = idx - row_offset; i < data_ell_size; i = i + size_of_ell_row) {
-
-                printf("IDX=%d value = %f, column=%d, i=%d\n", idx, data_ell[i], cols_ell[i], i);
+            for (int i = idx - row_offset; i < data_ell_size; i = i + matrix_dimension - offset_array_size) {
                 if (idx != cols_ell[i]) {
                     y[idx] -= data_ell[i] * x[cols_ell[i]];
                 }
                 else {
                     y[idx] += vector[idx];
                     index_of_diagonal_element = i;
-                    //printf("IDX=%d index_of_diagonal_element = %d\n", idx, i);
                 }
             }
-            printf("Diagonal element ell %d %f\n", idx, data_ell[index_of_diagonal_element]);
             y[idx] = y[idx] / data_ell[index_of_diagonal_element];
         }
     }
@@ -223,7 +234,19 @@ void readMatrixAndVectorFromFile()
     readFloatRowFormFile(fp, data_ell_size, &data_ell);
     readIntRowFromFile(fp, cols_ell_size, &cols_ell);
 
-    printf("Dimension: %d\nELL Data Size: %d\nELL Cols Size: %d\n", matrix_dimension, data_ell_size, cols_ell_size);
+    // Lese COO Format
+    fscanf(fp, "%d,%d", &data_coo_size, &size_of_coo_row);
+    cudaMallocManaged(&data_coo, data_coo_size * sizeof(float));
+    cudaMallocManaged(&rows_coo, data_coo_size * sizeof(int));
+    cudaMallocManaged(&cols_coo, data_coo_size * sizeof(int));
+    readFloatRowFormFile(fp, data_coo_size, &data_coo);
+    readIntRowFromFile(fp, data_coo_size, &rows_coo);
+    readIntRowFromFile(fp, data_coo_size, &cols_coo);
+
+    // Lese Vektor
+    readFloatRowFormFile(fp, matrix_dimension, &vector);
+
+    /*printf("Dimension: %d\nELL Data Size: %d\nELL Cols Size: %d\n", matrix_dimension, data_ell_size, cols_ell_size);
     printf("ELL Row Size: %d\n", size_of_ell_row);
     printf("Data ELL: ");
     for (int i = 0; i < data_ell_size; i++) {
@@ -235,16 +258,8 @@ void readMatrixAndVectorFromFile()
         printf("%d ", cols_ell[i]);
     }
     printf("\n");
-    
-    // Lese COO Format
-    fscanf(fp, "%d,%d", &data_coo_size, &size_of_coo_row);
-    cudaMallocManaged(&data_coo, data_coo_size * sizeof(float));
-    cudaMallocManaged(&rows_coo, data_coo_size * sizeof(int));
-    cudaMallocManaged(&cols_coo, data_coo_size * sizeof(int));
-    readFloatRowFormFile(fp, data_coo_size, &data_coo);
-    readIntRowFromFile(fp, data_coo_size, &rows_coo);
-    readIntRowFromFile(fp, data_coo_size, &cols_coo);
 
+    
     printf("COO Data Size: %d\n", data_coo_size);
     printf("COO Row Size: %d\n", size_of_coo_row);
     printf("Data COO: ");
@@ -263,14 +278,12 @@ void readMatrixAndVectorFromFile()
         printf("%d ", cols_coo[i]);
     }
     printf("\n");
-
-    // Lese Vektor
-    readFloatRowFormFile(fp, matrix_dimension, &vector);
+ 
     printf("Vector: ");
     for (int i = 0; i < matrix_dimension; i++) {
         printf("%f ", vector[i]);
     }
-    printf("\n");
+    printf("\n");*/
 
     fclose(fp);
     return;
