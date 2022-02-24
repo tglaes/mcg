@@ -16,6 +16,7 @@ void readMatrixAndVectorFromFile();
 void readFloatRowFormFile(FILE* fp, int size_of_row, float** data);
 void readIntRowFromFile(FILE* fp, int size_of_row, int** data);
 int calculate_grid_dimension(int matrix_dimension);
+void evaluateSolution();
 __global__ void jacobi(int matrix_dimension, int* prefix_array, int* rows_coo, int offset_array_size, float* data_ell, int* cols_ell, int size_of_ell_row, float* x, float* y, int data_ell_size, float* vector, int data_coo_size, int size_of_coo_row, float* data_coo, int* cols_coo);
 __global__ void offset(int* offset_array, int* rows_coo, int data_coo_size, int size_of_coo_row);
 __global__ void init_result_vector(int matrix_dimension, float* vector);
@@ -107,12 +108,8 @@ int main()
     cudaEventElapsedTime(&milliseconds, start, stop);
 
     printf("Computation finished after %f milliseconds and took %d iteration(s)\n", milliseconds, k);
-    
-    // TODO evaluate solution
-    for (int i = 0; i < matrix_dimension; i++) {
-        printf("Vector[%d] = %f\n", i, x[i]);
-    }
-    cudaDeviceSynchronize();
+    // Das Ergebnis steht in y, da in der letzten Iteration copyMemory nicht mehr aufgerufen wird
+    evaluateSolution();
 
     cudaFree(data_ell);
     cudaFree(cols_ell);
@@ -126,6 +123,42 @@ int main()
 
     return 0;
 }
+
+void evaluateSolution() {
+
+
+    // TODO berechne A * y (Matrix A mal berechneten Vektor y) mit Kernel
+
+
+    float max_difference = -10000.0;
+    float min_difference = 10000.0;;
+    float average_difference = 0.0;
+    float euclidian_distance = 0.0;
+
+    for (int i = 0; i < matrix_dimension; i++)
+    {
+        double absolute_difference = fabs(y[i] - vector[i]);
+        if (absolute_difference > max_difference)
+        {
+            max_difference = absolute_difference;
+        }
+        else if (absolute_difference < min_difference)
+        {
+            min_difference = absolute_difference;
+        }
+        euclidian_distance += pow(y[i] - vector[i], 2);
+        average_difference += absolute_difference;
+    }
+
+    average_difference = average_difference / matrix_dimension;
+    euclidian_distance = sqrt(euclidian_distance);
+
+    printf("Max difference:     %f\n", max_difference);
+    printf("Min difference:     %f\n", min_difference);
+    printf("Average difference: %f\n", average_difference);
+    printf("Euclidian distance: %f\n", euclidian_distance);
+}
+
 
 __global__ void init_result_vector(int matrix_dimension, float* vector) {
     int idx = blockDim.x * blockIdx.x + threadIdx.x;
