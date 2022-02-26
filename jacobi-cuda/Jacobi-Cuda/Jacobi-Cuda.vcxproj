@@ -81,6 +81,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\shared\matrix-generation\matrix_ell_coo_4.csv" />
+    <None Include="matrix_ell_coo_100.csv" />
     <None Include="matrix_ell_coo_7.csv" />
   </ItemGroup>
   <ItemGroup>

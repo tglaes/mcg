@@ -1,0 +1,31 @@
+{
+    "name": "matrix",
+    "version": "1.0.0",
+    "description": "learning tool",
+    "main": "matrixGen.js",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1",
+        "clean": "npm run docker:clean || npm run node:clean",
+        "docker:clean": "docker-clean.cmd",
+        "node:clean": "node-clean.cmd",
+        "install:client": "cd client && npm install",
+        "install:server": "cd server && npm install",
+        "install": "npm run install:client && npm run install:server",
+        "start:pg": "node test-env.js && cd server && npm run docker:pg",
+        "start:dev": "node matrixGen.js",
+        "start:docker": "node test-env.js && cd server && npm run docker",
+        "docker": "npm install && npm run build:client && npm run start:docker",
+        "start": "cd server && npm run start:prod",
+        "prebuild:client": "shx rm -rf server/client",
+        "build:client": "cd client && npm run build",
+        "postbuild:client": "shx cp -r client/dist server/client",
+        "build:server": "cd server && npm run build",
+        "build": "npm run build:client && npm run build:server",
+        "docs:dev": "vitepress dev docs-src",
+        "docs:build": "vitepress build docs-src",
+        "docs:serve": "vitepress serve docs-src",
+        "docs:genapi": "widdershins --environment ./docs-src/.widdershins/env.json ./server/swagger-spec.json -o ./docs-src/reference/api.md",
+        "predocs:build": "npm run docs:genapi",
+        "postdocs:build": "shx cp -r docs-src/.vitepress/dist/* docs"
+    }
+}
