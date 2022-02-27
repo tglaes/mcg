@@ -1,8 +1,1 @@
-﻿  Compiling CUDA source file kernel.cu...
-  
-  [0;36;40mC:\Users\Tristan Glaes\Projects\mcg\jacobi-cuda\Jacobi-CUDA[1;32;40m$ [0;97;40m"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.5\bin\nvcc.exe" -gencode=arch=compute_52,code=\"sm_52,compute_52\" --use-local-env -ccbin "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.29.30133\bin\HostX86\x64" -x cu   -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.5\include" -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.5\include"  -G   --keep-dir x64\Debug  -maxrregcount=0  --machine 64 --compile -cudart static  -g  -DWIN32 -DWIN64 -D_DEBUG -D_CONSOLE -D_MBCS -Xcompiler "/EHsc /W3 /nologo /Od /Fdx64\Debug\vc142.pdb /FS /Zi /RTC1 /MDd " -o x64\Debug\kernel.cu.obj "C:\Users\Tristan Glaes\Projects\mcg\jacobi-cuda\Jacobi-CUDA\kernel.cu" 
-  kernel.cu
-C:\Users\Tristan Glaes\Projects\mcg\jacobi-cuda\Jacobi-CUDA\kernel.cu(55): warning C4305: 'initializing': truncation from 'double' to 'float'
-C:\Users\Tristan Glaes\Projects\mcg\jacobi-cuda\Jacobi-CUDA\kernel.cu(157): warning C4244: '+=': conversion from 'double' to 'float', possible loss of data
-C:\Users\Tristan Glaes\Projects\mcg\jacobi-cuda\Jacobi-CUDA\kernel.cu(380): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-  Jacobi-Cuda.vcxproj -> C:\Users\Tristan Glaes\Projects\mcg\jacobi-cuda\Jacobi-CUDA\x64\Debug\Jacobi-Cuda.exe
+﻿  Jacobi-Cuda.vcxproj -> C:\Users\Tristan Glaes\Projects\mcg\jacobi-cuda\Jacobi-CUDA\x64\Debug\Jacobi-Cuda.exe

@@ -24,7 +24,7 @@ __global__ void check_iteration(int matrix_dimension, float EPSILON, float* x, f
 __global__ void copyMemory(int matrix_dimension, float* x, float* y);
 __global__ void matrix_vector_mult(int matrix_dimension, int* offset_array, int* rows_coo, int offset_array_size, float* data_ell, int* cols_ell, int size_of_ell_row, float* x, float* y, int data_ell_size, float* vector, int data_coo_size, int size_of_coo_row, float* data_coo, int* cols_coo);
 
-const char* matrix_file_name = "matrix_ell_coo_1000.csv";
+const char* matrix_file_name = "C:\\Users\\Tristan Glaes\\Projects\\mcg\\jacobi-cuda\\Jacobi-Cuda\\matrix_ell_coo_15000.csv";
 int matrix_dimension = 0;
 int grid_dimension = 0;
 
@@ -69,16 +69,18 @@ int main()
     grid_dimension = calculate_grid_dimension(matrix_dimension);
 
     // Initialisiere den Ergebnisvektor
-    cudaMallocManaged(&x, matrix_dimension);
+    cudaMallocManaged(&x, matrix_dimension * sizeof(float));
     init_vector_with_zero <<<grid_dimension, 1024 >>>(matrix_dimension, x);
+    cudaDeviceSynchronize();
 
     // Vektor für das Zwischenergebnis
-    cudaMallocManaged(&y, matrix_dimension);
+    cudaMallocManaged(&y, matrix_dimension * sizeof(float));
     init_vector_with_zero << <grid_dimension, 1024 >> > (matrix_dimension, y);
+    cudaDeviceSynchronize();
     cudaMallocHost(&did_iteration_change_more_than_epsilon, sizeof(bool));
 
     // Initializiere und berechne Offset Array
-    cudaMallocManaged(&offset_array, data_coo_size / size_of_coo_row);
+    cudaMallocManaged(&offset_array, (data_coo_size / size_of_coo_row)* sizeof(int));
     offset<<<1,1024>>> (offset_array, rows_coo, data_coo_size, size_of_coo_row);
     cudaDeviceSynchronize();
 
@@ -122,7 +124,7 @@ int main()
     cudaFree(vector);
     cudaFree(x);
     cudaFree(y);
-    cudaFree(did_iteration_change_more_than_epsilon);
+    cudaFreeHost(did_iteration_change_more_than_epsilon);
 
     return 0;
 }
@@ -143,7 +145,7 @@ void evaluateSolution() {
 
     for (int i = 0; i < matrix_dimension; i++)
     { 
-        printf("x[%d]=%f\n",i, x[i]);
+        //printf("x[%d]=%f\n",i, x[i]);
         //printf("vector[%d]=%f\n", i, vector[i]);
         float absolute_difference = fabs(x[i] - vector[i]);
         if (absolute_difference > max_difference)
