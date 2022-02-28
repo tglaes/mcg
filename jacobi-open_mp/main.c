@@ -11,8 +11,8 @@ int checkIteration(float *x, float *y);
 void evaluateSolution();
 void printData();
 void freeResources();
-void printCurrentTime();
 void printSolution(float *vector);
+void memcpy_parallel(float *src, float *dst, int dimension);
 
 int dimension = 0;
 int data_size = 0;
@@ -39,33 +39,23 @@ int main(int argc, char *argv[])
 		printf("You need to provide a matrix as argument!\n");
 		return 1;
 	}
-
-	printCurrentTime();
-	time_start = omp_get_wtime();
 	dimension = readMatrixAndVectorFromFile(argv[1], &data, &cols, &row_ptr, &vector, &data_size, &row_ptr_size);
 	// printData();
-	time_delta = omp_get_wtime() - time_start;
-	printf("Reading matrix took %f seconds\n", time_delta);
-
 	x = calloc(dimension, sizeof(float));
 	y = calloc(dimension, sizeof(float));
 
 	time_start = omp_get_wtime();
 
-	printCurrentTime();
-
 	// Schleife für die Iterationen
 	for (k = 1; k < 10000; k++)
 	{
-		//#pragma omp parallel for
+#pragma omp parallel for
 		for (int i = 0; i < row_ptr_size - 1; i++)
 		{
 			float row_result = 0;
 			int index_of_diagonal_element;
 			for (int j = row_ptr[i]; j < row_ptr[i + 1]; j++)
 			{
-				// printf("%d ", j);
-				// printf("%f ", data[j]);
 				//  i und cols[j] zusammen sind das Matrixelement matrix[i][cols[j]]
 				if (i != cols[j])
 				{
@@ -76,32 +66,29 @@ int main(int argc, char *argv[])
 					row_result += vector[i];
 					// Der Index des Diagonalelements der aktuellen Zeile (Zeile i) im data Array
 					index_of_diagonal_element = j;
-					// printf("%d\n", j);
 				}
 			}
 
 			// Teilen durch das Diagonalelement
 			y[i] = row_result / data[index_of_diagonal_element];
-			// printf("\n");
 		}
 
 		// Überprüfen, ob sich ein Wert mehr als EPSILON verändert hat
 		int iterationCheck = checkIteration(x, y);
-		memcpy(x, y, sizeof(float) * dimension);
 		if (iterationCheck != 0)
 		{
 			break;
 		}
-		// printf("%f\n", x[0]);
+		else
+		{
+			// memcpy(x, y, sizeof(float) * dimension);
+			memcpy_parallel(y, x, dimension);
+		}
 	}
 
 	time_delta = omp_get_wtime() - time_start;
 	printf("Computation finished after %d iteration(s) and took %f seconds\n", k, time_delta);
 	evaluateSolution();
-	/*for (int i = 0; i < dimension; i++)
-	{
-		printf("%f\n", y[i]);
-	}*/
 
 	freeResources();
 }
@@ -112,15 +99,21 @@ int checkIteration(float *x, float *y)
 #pragma omp parallel for shared(counter)
 	for (int i = 0; i < dimension; i++)
 	{
-		// Counter
 		if (fabs(x[i] - y[i]) > EPSILON)
 		{
-			// printf("%d ", i);
-			// printf("%f, %f, %f\n", fabs(x[i]), fabs(y[i]), fabs(x[i]) - fabs(y[i]));
 			counter++;
 		}
 	}
 	return counter == 0 ? 1 : 0;
+}
+
+void memcpy_parallel(float *src, float *dst, int dimension)
+{
+#pragma omp parallel
+	for (int i = 0; i < dimension; i++)
+	{
+		dst[i] = src[i];
+	}
 }
 
 void evaluateSolution()
@@ -159,10 +152,6 @@ void evaluateSolution()
 
 	average_difference = average_difference / dimension;
 	euclidian_distance = sqrt(euclidian_distance);
-	// printf("Result vector:      ");
-	// printSolution(vector);
-	// printf("Calculated vector:  ");
-	// printSolution(y);
 	printf("Max difference:     %f\n", max_difference);
 	printf("Min difference:     %f\n", min_difference);
 	printf("Average difference: %f\n", average_difference);
@@ -204,37 +193,6 @@ void freeResources()
 	free(x);
 	free(y);
 	free(vector);
-}
-
-void printCurrentTime()
-{
-	time_t current_time;
-	char *c_time_string;
-
-	/* Obtain current time. */
-	current_time = time(NULL);
-
-	if (current_time == ((time_t)-1))
-	{
-		(void)fprintf(stderr, "Failure to obtain the current time.\n");
-		exit(EXIT_FAILURE);
-	}
-
-	/* Convert to local time format. */
-	c_time_string = ctime(&current_time);
-
-	if (c_time_string == NULL)
-	{
-		(void)fprintf(stderr, "Failure to convert the current time.\n");
-		exit(EXIT_FAILURE);
-	}
-
-	char *substr = malloc(10);
-	strncpy(substr, c_time_string + 11, 10);
-	substr[8] = '\n';
-	substr[9] = '\0';
-
-	printf("Time is %s", substr);
 }
 
 void printSolution(float *vector)

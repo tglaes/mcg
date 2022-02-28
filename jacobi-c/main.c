@@ -18,6 +18,7 @@ int dimension = 0;
 
 int main(int argc, char **argv)
 {
+    printf("Jacobi C\n");
     if (argc != 2)
     {
         printf("You need to provide a matrix as argument!\n");
@@ -60,15 +61,11 @@ int main(int argc, char **argv)
         {
             break;
         }
-        // printf("%f\n", x[0]);
     }
 
     end = clock();
     delta = (double)(end - begin) / CLOCKS_PER_SEC;
     printf("Computation finished after %d iterations and took %f seconds\n", k, delta);
-
-    // printf("Solution:               ");
-    // printSolution(x);
 
     evaluateSolution(matrix, vector, x);
     free(matrix);
@@ -84,8 +81,6 @@ int checkIteration(float *x, float *y)
     {
         if (fabs(x[i] - y[i]) > EPSILON)
         {
-            // printf("%d ", i);
-            // printf("%f, %f, %f\n", fabs(x[i]), fabs(y[i]), fabs(x[i]) - fabs(y[i]));
             return 0;
         }
     }
@@ -128,10 +123,6 @@ void evaluateSolution(float *matrix, float *vector, float *x)
 
     average_difference = average_difference / dimension;
     euclidian_distance = sqrt(euclidian_distance);
-    // printf("Result vector:          ");
-    // printSolution(vector);
-    // printf("Calculated vector:      ");
-    // printSolution(calculated_result);
     printf("Max difference:     %f\n", max_difference);
     printf("Min difference:     %f\n", min_difference);
     printf("Average difference: %f\n", average_difference);
