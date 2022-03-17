@@ -12,7 +12,6 @@ void evaluateSolution();
 void printData();
 void freeResources();
 void printSolution(float *vector);
-void memcpy_parallel(float *src, float *dst, int dimension);
 
 int dimension = 0;
 int data_size = 0;
@@ -81,8 +80,10 @@ int main(int argc, char *argv[])
 		}
 		else
 		{
+			float *tmp = x;
+			x = y;
+			y = tmp;
 			// memcpy(x, y, sizeof(float) * dimension);
-			memcpy_parallel(y, x, dimension);
 		}
 	}
 
@@ -105,15 +106,6 @@ int checkIteration(float *x, float *y)
 		}
 	}
 	return counter == 0 ? 1 : 0;
-}
-
-void memcpy_parallel(float *src, float *dst, int dimension)
-{
-#pragma omp parallel
-	for (int i = 0; i < dimension; i++)
-	{
-		dst[i] = src[i];
-	}
 }
 
 void evaluateSolution()

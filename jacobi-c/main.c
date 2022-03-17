@@ -56,11 +56,17 @@ int main(int argc, char **argv)
         }
         // Check if values changed by more than EPLISON
         int iterationCheck = checkIteration(x, y);
-        memcpy(x, y, sizeof(float) * dimension);
         if (iterationCheck != 0)
         {
             break;
-        }
+        } 
+        else
+		{
+			float *tmp = x;
+			x = y;
+			y = tmp;
+			// memcpy(x, y, sizeof(float) * dimension);
+		}
     }
 
     end = clock();
